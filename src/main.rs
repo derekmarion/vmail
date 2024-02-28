@@ -1,27 +1,16 @@
-use std::collections::HashMap;
+use std::{env, process};
+use vmail::Config;
 
-use reqwest::header::{HeaderMap, HeaderValue};
+fn main() {
+    let args: Vec<String> = env::args().collect();
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut headers = HeaderMap::new();
-    let email = "derek.j.marion@gmail.com";
-    headers.insert("X-RapidAPI-Key", HeaderValue::from_static("APIKEY"));
-    headers.insert("X-RapidAPI_Host", HeaderValue::from_static("email-checker.p.rapidapi.com"));
+    let config = Config::build(env::args()).unwrap_or_else(|err| {
+        eprintln!("Problem parsing arguments: {err}");
+        process::exit(1);
+    });
 
-    let mut params = HashMap::new();
-    params.insert("email", email);
-
-    let client = reqwest::Client::new();
-    let response = client
-        .get("https://email-checker.p.rapidapi.com/verify/v1")
-        .headers(headers)
-        .query(&params)
-        .send()
-        .await?;
-
-    let body = response.text().await?;
-    println!("{}", body);
-
-    Ok(())
+    if let Err(e) = vmail::run(config) {
+        eprintln!("Application error: {e}");
+        process::exit(1)
+    }
 }
